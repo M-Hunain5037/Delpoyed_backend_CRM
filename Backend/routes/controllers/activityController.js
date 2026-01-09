@@ -1,4 +1,5 @@
 const pool = require('../../config/database');
+const { getPakistanMySQLDateTime, getPakistanDateString } = require('../../utils/timezone');
 
 // Record Employee Activity
 exports.recordActivity = async (req, res) => {
@@ -23,7 +24,7 @@ exports.recordActivity = async (req, res) => {
     const connection = await pool.getConnection();
 
     try {
-      const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      const timestamp = getPakistanMySQLDateTime();
 
       // Insert activity record
       const [result] = await connection.query(
@@ -182,7 +183,7 @@ exports.getEmployeeActivities = async (req, res) => {
 // Get Today's Activities
 exports.getTodayActivities = async (req, res) => {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getPakistanDateString();
 
     const connection = await pool.getConnection();
 

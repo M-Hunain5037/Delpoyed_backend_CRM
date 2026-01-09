@@ -11,7 +11,8 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
   enableKeepAlive: true,
-  keepAliveInitialDelayMs: 0
+  keepAliveInitialDelayMs: 0,
+  timezone: '+05:00' // Set Pakistan timezone (UTC+5)
 });
 
 // Test the connection

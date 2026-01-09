@@ -1,5 +1,6 @@
 const pool = require('../../config/database');
 const jwt = require('jsonwebtoken');
+const { getPakistanDate } = require('../../utils/timezone');
 
 // Record user login with system information
 exports.recordLogin = async (req, res) => {
@@ -108,7 +109,7 @@ exports.recordLogin = async (req, res) => {
         data: {
           sessionId: sessionId,
           sessionToken: sessionToken,
-          loginTime: new Date(),
+          loginTime: getPakistanDate(),
           deviceType: deviceType
         }
       });

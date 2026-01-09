@@ -1,7 +1,9 @@
 const pool = require('../../config/database');
+const { getPakistanDate, getPakistanDateString, getPakistanTimeString, getPakistanYesterday, getUTCTimeString, convertUTCTimeToPakistani } = require('../../utils/timezone');
 
 // ============================================================
 // HELPER FUNCTION: Get local date string (YYYY-MM-DD) from Date object
+// Using Pakistan timezone
 // ============================================================
 const getLocalDateString = (date) => {
   const year = date.getFullYear();
@@ -136,9 +138,10 @@ exports.checkIn = async (req, res) => {
       });
     }
 
-    const now = new Date();
-    const checkInTime = now.toTimeString().split(' ')[0]; // HH:MM:SS
-    const checkInHour = now.getHours(); // Local hour
+    const now = getPakistanDate(); // Use Pakistan timezone
+    const checkInTime = getPakistanTimeString(); // HH:MM:SS in Pakistan timezone (for display)
+    const checkInTimeUTC = getUTCTimeString(); // HH:MM:SS in UTC (for database storage)
+    const checkInHour = now.getHours(); // Pakistan hour
     
     // Determine attendance date for night shift:
     // Night shift: 21:00 (9 PM) to 06:00 (6 AM) next day
@@ -147,13 +150,12 @@ exports.checkIn = async (req, res) => {
     let attendanceDate;
     if (checkInHour >= 0 && checkInHour < 6) {
       // Early morning (00:00-05:59) - belongs to yesterday's shift
-      const yesterday = new Date(now);
-      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterday = getPakistanYesterday();
       attendanceDate = getLocalDateString(yesterday);
       console.log(`📅 Early morning check-in: Using YESTERDAY's date (${attendanceDate}) for night shift`);
     } else {
       // Evening/normal hours - use today
-      attendanceDate = getLocalDateString(now);
+      attendanceDate = getPakistanDateString();
       console.log(`📅 Evening check-in: Using TODAY's date (${attendanceDate})`);
     }
 
@@ -180,7 +182,8 @@ exports.checkIn = async (req, res) => {
           
           if (fullRecord.length > 0) {
             const createdAt = new Date(fullRecord[0].created_at);
-            const hoursSinceCheckIn = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60); // Convert ms to hours
+            const pkNow = getPakistanDate();
+            const hoursSinceCheckIn = (pkNow.getTime() - createdAt.getTime()) / (1000 * 60 * 60); // Convert ms to hours
             
             // Only auto-checkout if 24+ hours have passed
             if (hoursSinceCheckIn >= 24) {
@@ -188,7 +191,9 @@ exports.checkIn = async (req, res) => {
               console.log(`   Created ${hoursSinceCheckIn.toFixed(1)} hours ago - Auto-completing...`);
               
               // Auto-complete the previous checkout with current time minus 1 minute
-              const autoCheckOutTime = new Date(now.getTime() - 60000).toTimeString().split(' ')[0]; // 1 minute ago
+              const pkDate = getPakistanDate();
+              pkDate.setMinutes(pkDate.getMinutes() - 1);
+              const autoCheckOutTime = getPakistanTimeString(); // Use Pakistan time
               
               const [breakResult] = await connection.query(
                 `SELECT total_break_duration_minutes FROM Employee_Attendance WHERE id = ?`,
@@ -303,7 +308,7 @@ exports.checkIn = async (req, res) => {
         `INSERT INTO Employee_Attendance 
          (employee_id, email, name, attendance_date, check_in_time, status, on_time, late_by_minutes, device_info, ip_address)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [employee_id, email, name, attendanceDate, checkInTime, status, onTime, lateByMinutes, device_info || null, ip_address || null]
+        [employee_id, email, name, attendanceDate, checkInTimeUTC, status, onTime, lateByMinutes, device_info || null, ip_address || null]
       );
 
       console.log(`✅ Check In: ${name} (${email}) at ${checkInTime} on ${attendanceDate}`);
@@ -364,7 +369,7 @@ exports.checkOut = async (req, res) => {
     // Determine which employee_id to use - MUST use jwtEmployeeId (employee_onboarding.id) for FK consistency
     let employee_id = jwtEmployeeId || reqEmployeeId || jwtUserId;
     
-    const now = new Date();
+    const now = getPakistanDate(); // Use Pakistan timezone
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
     
@@ -386,7 +391,7 @@ exports.checkOut = async (req, res) => {
       // Work date logic for night shift:
       // The night shift runs from 21:00 (9 PM) to 06:00 (6 AM) next day
       // Get today's date
-      const todayStr = now.toISOString().split('T')[0];
+      const todayStr = getPakistanDateString();
       
       // First, try to find an active check-in for TODAY (current calendar day)
       const [attendanceRecordToday] = await connection.query(
@@ -403,9 +408,8 @@ exports.checkOut = async (req, res) => {
         workDateStr = todayStr;
       } else {
         // No active check-in for today, try YESTERDAY (for morning check-outs)
-        const yesterdayDate = new Date(now);
-        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-        const yesterdayStr = yesterdayDate.toISOString().split('T')[0];
+        const yesterdayDate = getPakistanYesterday();
+        const yesterdayStr = getLocalDateString(yesterdayDate);
         
         const [attendanceRecordYesterday] = await connection.query(
           `SELECT id, check_in_time, total_break_duration_minutes FROM Employee_Attendance 
@@ -427,7 +431,7 @@ exports.checkOut = async (req, res) => {
         }
       }
 
-      const checkOutTime = new Date().toTimeString().split(' ')[0];
+      const checkOutTime = getPakistanTimeString();
       const attendanceId = attendanceRecord[0].id;
       const checkInTime = attendanceRecord[0].check_in_time;
       const totalBreakMinutes = attendanceRecord[0].total_break_duration_minutes || 0;
@@ -546,7 +550,7 @@ exports.checkOut = async (req, res) => {
         data: {
           id: attendanceId,
           employee_id,
-          check_out_time: checkOutTime,
+          check_out_time: convertUTCTimeToPakistani(checkOutTime),
           gross_working_time_minutes: grossWorkingMinutes,
           net_working_time_minutes: netWorkingMinutes,
           overtime_hours: parseFloat(overtimeHours),
@@ -600,7 +604,7 @@ exports.generateAbsentRecords = async (req, res) => {
       
       // Calculate date range from joining to today
       const startDate = new Date(joining_date);
-      const today = new Date();
+      const today = getPakistanDate();
       today.setHours(0, 0, 0, 0); // Reset to start of day
       
       console.log(`👤 Processing ${name} (ID: ${employee_id}) from ${startDate.toDateString()}`);
@@ -840,17 +844,16 @@ exports.recordBreakEnd = async (req, res) => {
     const { break_type, break_end_time, break_duration_minutes } = req.body;
     
     // Calculate attendance_date using same night shift logic
-    const now = new Date();
+    const now = getPakistanDate();
     const checkInHour = now.getHours();
     let attendanceDate;
     if (checkInHour >= 0 && checkInHour < 6) {
       // Early morning (00:00-05:59) - belongs to yesterday's shift
-      const yesterday = new Date(now);
-      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterday = getPakistanYesterday();
       attendanceDate = getLocalDateString(yesterday);
     } else {
       // Evening/normal hours - use today
-      attendanceDate = getLocalDateString(now);
+      attendanceDate = getPakistanDateString();
     }
 
     console.log('⏸️ Record break END request received:');
@@ -896,7 +899,7 @@ exports.recordBreakEnd = async (req, res) => {
       }
 
       const attendanceId = attendanceRecord[0].id;
-      const breakEnd = break_end_time || new Date().toTimeString().split(' ')[0];
+      const breakEnd = break_end_time || getPakistanTimeString();
 
       // Find the most recent break record for this type that doesn't have an end time
       const [breakRecord] = await connection.query(
@@ -1206,7 +1209,7 @@ exports.getOngoingBreaks = async (req, res) => {
         return {
           id: brk.id,
           break_type: brk.break_type,
-          break_start_time: brk.break_start_time,
+          break_start_time: convertUTCTimeToPakistani(brk.break_start_time),
           break_duration_minutes: chosenDuration,
           created_at: brk.created_at,
           status: 'ongoing',
@@ -1331,8 +1334,8 @@ exports.getTodayBreaks = async (req, res) => {
         data: todayBreaks.map(brk => ({
           id: brk.id,
           break_type: brk.break_type,
-          break_start_time: brk.break_start_time,
-          break_end_time: brk.break_end_time,
+          break_start_time: convertUTCTimeToPakistani(brk.break_start_time),
+          break_end_time: brk.break_end_time ? convertUTCTimeToPakistani(brk.break_end_time) : null,
           break_duration_minutes: brk.break_duration_minutes || 0,
           created_at: brk.created_at,
           status: brk.break_end_time ? 'completed' : 'ongoing'
@@ -1606,16 +1609,25 @@ exports.getTodayAttendance = async (req, res) => {
       // Determine if user is currently checked in (check_out_time is null)
       const isCheckedIn = record.check_out_time === null;
 
+      // Convert UTC times stored in database to Pakistan times for display
+      const displayRecord = {
+        ...record,
+        attendance_date: localDateStr,
+        check_in_time: convertUTCTimeToPakistani(record.check_in_time),
+        check_out_time: record.check_out_time ? convertUTCTimeToPakistani(record.check_out_time) : null,
+        breaks: breaks.map(breakRecord => ({
+          ...breakRecord,
+          break_start_time: convertUTCTimeToPakistani(breakRecord.break_start_time),
+          break_end_time: breakRecord.break_end_time ? convertUTCTimeToPakistani(breakRecord.break_end_time) : null
+        })),
+        isCheckedIn: isCheckedIn
+      };
+
       res.status(200).json({
         success: true,
         message: 'Today attendance data',
         isCheckedIn: isCheckedIn,
-        data: {
-          ...record,
-          attendance_date: localDateStr,
-          breaks: breaks,
-          isCheckedIn: isCheckedIn
-        }
+        data: displayRecord
       });
     } finally {
       connection.release();
@@ -1677,7 +1689,9 @@ exports.getMonthlyAttendance = async (req, res) => {
         attendance_date: (() => {
           const d = record.attendance_date instanceof Date ? record.attendance_date : new Date(record.attendance_date);
           return getLocalDateString(d);
-        })()
+        })(),
+        check_in_time: convertUTCTimeToPakistani(record.check_in_time),
+        check_out_time: record.check_out_time ? convertUTCTimeToPakistani(record.check_out_time) : null
       }));
 
       res.status(200).json({
@@ -1745,7 +1759,13 @@ exports.getAllAttendance = async (req, res) => {
           
           return {
             ...record,
-            breaks: breaks || [],
+            check_in_time: convertUTCTimeToPakistani(record.check_in_time),
+            check_out_time: record.check_out_time ? convertUTCTimeToPakistani(record.check_out_time) : null,
+            breaks: breaks ? breaks.map(b => ({
+              ...b,
+              break_start_time: convertUTCTimeToPakistani(b.break_start_time),
+              break_end_time: b.break_end_time ? convertUTCTimeToPakistani(b.break_end_time) : null
+            })) : [],
             total_breaks_count: breaks ? breaks.length : 0
           };
         })
@@ -1817,7 +1837,13 @@ exports.getAllAttendanceWithAbsent = async (req, res) => {
           
           return {
             ...record,
-            breaks: breaks || [],
+            check_in_time: convertUTCTimeToPakistani(record.check_in_time),
+            check_out_time: record.check_out_time ? convertUTCTimeToPakistani(record.check_out_time) : null,
+            breaks: breaks ? breaks.map(b => ({
+              ...b,
+              break_start_time: convertUTCTimeToPakistani(b.break_start_time),
+              break_end_time: b.break_end_time ? convertUTCTimeToPakistani(b.break_end_time) : null
+            })) : [],
             total_breaks_count: breaks ? breaks.length : 0
           };
         })
@@ -2029,11 +2055,18 @@ exports.getAllBreaks = async (req, res) => {
 
       console.log(`📊 Retrieved ${breaks.length} break records from database`);
 
+      // Convert UTC times to Pakistan times for display
+      const convertedBreaks = breaks.map(brk => ({
+        ...brk,
+        break_start_time: convertUTCTimeToPakistani(brk.break_start_time),
+        break_end_time: brk.break_end_time ? convertUTCTimeToPakistani(brk.break_end_time) : null
+      }));
+
       res.status(200).json({
         success: true,
         message: 'All breaks retrieved successfully',
-        data: breaks,
-        count: breaks.length
+        data: convertedBreaks,
+        count: convertedBreaks.length
       });
     } finally {
       connection.release();
