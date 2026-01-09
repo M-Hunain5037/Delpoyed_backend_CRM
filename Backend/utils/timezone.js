@@ -42,6 +42,19 @@ const getPakistanTimeString = () => {
 };
 
 /**
+ * Get current time in UTC format for database storage
+ * Since database timezone is set to +05:00, we need to subtract 5 hours from PKT to get UTC
+ * @returns {string} Time string in HH:MM:SS format (UTC)
+ */
+const getUTCTimeString = () => {
+  const now = new Date();
+  const hours = String(now.getUTCHours()).padStart(2, '0');
+  const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(now.getUTCSeconds()).padStart(2, '0');
+  return `${hours}:${minutes}:${seconds}`;
+};
+
+/**
  * Get current datetime in ISO format for Pakistan timezone
  * @returns {string} ISO datetime string (Pakistan timezone)
  */
@@ -108,14 +121,48 @@ const getPakistanYesterdayString = () => {
   return `${year}-${month}-${day}`;
 };
 
+/**
+ * Convert UTC time string (HH:MM:SS) to Pakistan time string (HH:MM:SS)
+ * Database stores times in UTC, this function converts them for display
+ * @param {string} utcTimeString - Time string in HH:MM:SS format (UTC)
+ * @returns {string} Time string in HH:MM:SS format (Pakistan timezone - UTC+5)
+ */
+const convertUTCTimeToPakistani = (utcTimeString) => {
+  if (!utcTimeString) return null;
+  
+  try {
+    const [hours, minutes, seconds] = utcTimeString.split(':').map(Number);
+    
+    // Create a date with the UTC time
+    const utcDate = new Date(Date.UTC(2000, 0, 1, hours, minutes, seconds));
+    
+    // Add 5 hours to convert from UTC to Pakistan time (UTC+5)
+    const pakistanDate = new Date(utcDate.getTime() + (5 * 3600000)); // 5 hours in milliseconds
+    
+    // Handle day overflow (if adding 5 hours goes past midnight)
+    // We only care about the time portion, so if it goes to next day, that's fine for display
+    
+    const pkHours = String(pakistanDate.getUTCHours()).padStart(2, '0');
+    const pkMinutes = String(pakistanDate.getUTCMinutes()).padStart(2, '0');
+    const pkSeconds = String(pakistanDate.getUTCSeconds()).padStart(2, '0');
+    
+    return `${pkHours}:${pkMinutes}:${pkSeconds}`;
+  } catch (error) {
+    console.error('Error converting UTC time to Pakistan time:', error);
+    return utcTimeString; // Return original if conversion fails
+  }
+};
+
 module.exports = {
   getPakistanDate,
   getPakistanDateString,
   getPakistanTimeString,
+  getUTCTimeString,
   getPakistanISO,
   getPakistanMySQLDateTime,
   convertToPakistanTime,
   formatPakistanDate,
   getPakistanYesterday,
-  getPakistanYesterdayString
+  getPakistanYesterdayString,
+  convertUTCTimeToPakistani
 };
