@@ -12,21 +12,37 @@ app.use(express.urlencoded({ extended: true }));
 // CORS Configuration
 const corsOptions = {
   origin: function (origin, callback) {
+    // Base allowed origins - always allow localhost for development
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:5000',
-      'https://plustaff-frontend.vercel.app'
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:5000'
     ];
+
+    // Add environment-specific origins from .env
+    const envOrigins = process.env.CORS_ORIGINS 
+      ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
+      : [];
     
-    if (!origin || allowedOrigins.includes(origin)) {
+    const allAllowedOrigins = [...allowedOrigins, ...envOrigins];
+
+    console.log('🔐 CORS Check - Origin:', origin);
+    console.log('✅ Allowed Origins:', allAllowedOrigins);
+
+    // Allow requests with no origin (like mobile apps or curl requests)
+    // Also allow any origin that matches our allowlist
+    if (!origin || allAllowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.error('❌ CORS Blocked - Origin not in allowlist:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 86400 // 24 hours
 };
 
 app.use(cors(corsOptions));
