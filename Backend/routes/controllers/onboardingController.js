@@ -387,3 +387,104 @@ exports.getOnboardingProgress = async (req, res) => {
     });
   }
 };
+
+// Check if employee ID is available
+exports.checkEmployeeIdAvailability = async (req, res) => {
+  try {
+    const { numericId } = req.params;
+    const EMPLOYEE_ID_PREFIX = 'DIG';
+
+    // Validate numeric ID
+    // Must be at least 3 digits and not "000"
+    if (!numericId || !/^\d+$/.test(numericId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Employee ID must contain only numeric digits',
+        exists: false
+      });
+    }
+
+    // Validate it's at least 3 digits
+    if (numericId.length < 3) {
+      return res.status(400).json({
+        success: false,
+        message: 'Employee ID must have at least 3 digits',
+        exists: false
+      });
+    }
+
+    // Validate "000" is not allowed
+    if (numericId === '000' || parseInt(numericId) === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '000 is not a valid Employee ID',
+        exists: false
+      });
+    }
+
+    // Format ID with proper padding
+    const paddedId = String(parseInt(numericId)).padStart(3, '0');
+    const fullEmployeeId = `${EMPLOYEE_ID_PREFIX}-${paddedId}`;
+
+    // Check if ID exists in database (case-insensitive)
+    const [result] = await pool.query(
+      `SELECT employee_id FROM employee_onboarding WHERE UPPER(employee_id) = UPPER(?)`,
+      [fullEmployeeId]
+    );
+
+    const exists = result.length > 0;
+
+    if (!exists) {
+      // ID is available
+      return res.status(200).json({
+        success: true,
+        message: 'Employee ID is available',
+        exists: false,
+        employeeId: fullEmployeeId
+      });
+    }
+
+    // ID exists, suggest next available ID
+    // Get all employee IDs with DIG prefix
+    const [allIds] = await pool.query(
+      `SELECT employee_id FROM employee_onboarding 
+       WHERE employee_id LIKE 'DIG-%' OR employee_id LIKE 'DiG-%'
+       ORDER BY CAST(SUBSTRING_INDEX(employee_id, '-', -1) AS UNSIGNED) ASC`
+    );
+
+    // Extract numeric parts and find gaps
+    const usedNumbers = allIds.map(row => {
+      const numPart = row.employee_id.split('-')[1];
+      return parseInt(numPart);
+    }).filter(n => !isNaN(n) && n !== 0);
+
+    // Find next available number
+    let nextNumber = 1;
+    for (let num of usedNumbers) {
+      if (num === nextNumber) {
+        nextNumber++;
+      } else {
+        break;
+      }
+    }
+
+    const suggestedId = `${EMPLOYEE_ID_PREFIX}-${String(nextNumber).padStart(3, '0')}`;
+
+    return res.status(200).json({
+      success: false,
+      message: 'Employee ID already exists',
+      exists: true,
+      employeeId: fullEmployeeId,
+      suggestedId: suggestedId
+    });
+
+  } catch (error) {
+    console.error('Error checking employee ID:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error checking employee ID availability',
+      error: error.message,
+      exists: false
+    });
+  }
+};

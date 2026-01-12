@@ -4,6 +4,9 @@ const onboardingController = require('./controllers/onboardingController');
 const debugController = require('./controllers/debugController');
 const authMiddleware = require('../middleware/auth');
 
+// GET - Check if employee ID exists and get next available ID
+router.get('/check-employee-id/:numericId', onboardingController.checkEmployeeIdAvailability);
+
 // POST - Create new employee
 router.post('/employees', onboardingController.createEmployee);
 
