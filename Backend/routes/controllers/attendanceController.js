@@ -1757,8 +1757,20 @@ exports.getAllAttendance = async (req, res) => {
             [record.id]
           );
           
+          // Format attendance_date as YYYY-MM-DD string (not ISO datetime)
+          let attendanceDateStr = record.attendance_date;
+          if (record.attendance_date instanceof Date) {
+            const year = record.attendance_date.getFullYear();
+            const month = String(record.attendance_date.getMonth() + 1).padStart(2, '0');
+            const day = String(record.attendance_date.getDate()).padStart(2, '0');
+            attendanceDateStr = `${year}-${month}-${day}`;
+          } else if (typeof record.attendance_date === 'string') {
+            attendanceDateStr = record.attendance_date.split('T')[0];
+          }
+          
           return {
             ...record,
+            attendance_date: attendanceDateStr,
             check_in_time: convertUTCTimeToPakistani(record.check_in_time),
             check_out_time: record.check_out_time ? convertUTCTimeToPakistani(record.check_out_time) : null,
             breaks: breaks ? breaks.map(b => ({
@@ -1835,8 +1847,20 @@ exports.getAllAttendanceWithAbsent = async (req, res) => {
             [record.id]
           );
           
+          // Format attendance_date as YYYY-MM-DD string (not ISO datetime)
+          let attendanceDateStr = record.attendance_date;
+          if (record.attendance_date instanceof Date) {
+            const year = record.attendance_date.getFullYear();
+            const month = String(record.attendance_date.getMonth() + 1).padStart(2, '0');
+            const day = String(record.attendance_date.getDate()).padStart(2, '0');
+            attendanceDateStr = `${year}-${month}-${day}`;
+          } else if (typeof record.attendance_date === 'string') {
+            attendanceDateStr = record.attendance_date.split('T')[0];
+          }
+          
           return {
             ...record,
+            attendance_date: attendanceDateStr,
             check_in_time: convertUTCTimeToPakistani(record.check_in_time),
             check_out_time: record.check_out_time ? convertUTCTimeToPakistani(record.check_out_time) : null,
             breaks: breaks ? breaks.map(b => ({
