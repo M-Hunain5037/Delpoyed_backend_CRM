@@ -1,5 +1,5 @@
 const pool = require('../../config/database');
-const { getPakistanDate, getPakistanDateString, getPakistanTimeString, getPakistanYesterday, getUTCTimeString } = require('../../utils/timezone');
+const { getPakistanDate, getPakistanDateString, getPakistanTimeString, getPakistanYesterday, getUTCTimeString, convertUTCTimeToPakistani } = require('../../utils/timezone');
 
 // ============================================================
 // HELPER FUNCTION: Get local date string (YYYY-MM-DD) from Date object
@@ -139,7 +139,8 @@ exports.checkIn = async (req, res) => {
     }
 
     const now = getPakistanDate(); // Use Pakistan timezone
-    const checkInTime = getPakistanTimeString(); // HH:MM:SS in Pakistan timezone
+    const checkInTime = getPakistanTimeString(); // HH:MM:SS in Pakistan timezone (for display)
+    const checkInTimeUTC = getUTCTimeString(); // HH:MM:SS in UTC (for database storage)
     const checkInHour = now.getHours(); // Pakistan hour
     
     // Determine attendance date for night shift:
@@ -307,7 +308,7 @@ exports.checkIn = async (req, res) => {
         `INSERT INTO Employee_Attendance 
          (employee_id, email, name, attendance_date, check_in_time, status, on_time, late_by_minutes, device_info, ip_address)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [employee_id, email, name, attendanceDate, checkInTime, status, onTime, lateByMinutes, device_info || null, ip_address || null]
+        [employee_id, email, name, attendanceDate, checkInTimeUTC, status, onTime, lateByMinutes, device_info || null, ip_address || null]
       );
 
       console.log(`✅ Check In: ${name} (${email}) at ${checkInTime} on ${attendanceDate}`);
@@ -550,7 +551,7 @@ exports.checkOut = async (req, res) => {
         data: {
           id: attendanceId,
           employee_id,
-          check_out_time: checkOutTime,
+          check_out_time: convertUTCTimeToPakistani(checkOutTime),
           gross_working_time_minutes: grossWorkingMinutes,
           net_working_time_minutes: netWorkingMinutes,
           overtime_hours: parseFloat(overtimeHours),
@@ -1209,7 +1210,7 @@ exports.getOngoingBreaks = async (req, res) => {
         return {
           id: brk.id,
           break_type: brk.break_type,
-          break_start_time: brk.break_start_time,
+          break_start_time: convertUTCTimeToPakistani(brk.break_start_time),
           break_duration_minutes: chosenDuration,
           created_at: brk.created_at,
           status: 'ongoing',
@@ -1334,8 +1335,8 @@ exports.getTodayBreaks = async (req, res) => {
         data: todayBreaks.map(brk => ({
           id: brk.id,
           break_type: brk.break_type,
-          break_start_time: brk.break_start_time,
-          break_end_time: brk.break_end_time || null,
+          break_start_time: convertUTCTimeToPakistani(brk.break_start_time),
+          break_end_time: brk.break_end_time ? convertUTCTimeToPakistani(brk.break_end_time) : null,
           break_duration_minutes: brk.break_duration_minutes || 0,
           created_at: brk.created_at,
           status: brk.break_end_time ? 'completed' : 'ongoing'
@@ -1609,16 +1610,16 @@ exports.getTodayAttendance = async (req, res) => {
       // Determine if user is currently checked in (check_out_time is null)
       const isCheckedIn = record.check_out_time === null;
 
-      // Times are already stored in Pakistan timezone format, no conversion needed
+      // Convert UTC times stored in database to Pakistan times for display
       const displayRecord = {
         ...record,
         attendance_date: localDateStr,
-        check_in_time: record.check_in_time,
-        check_out_time: record.check_out_time || null,
+        check_in_time: convertUTCTimeToPakistani(record.check_in_time),
+        check_out_time: record.check_out_time ? convertUTCTimeToPakistani(record.check_out_time) : null,
         breaks: breaks.map(breakRecord => ({
           ...breakRecord,
-          break_start_time: breakRecord.break_start_time,
-          break_end_time: breakRecord.break_end_time || null
+          break_start_time: convertUTCTimeToPakistani(breakRecord.break_start_time),
+          break_end_time: breakRecord.break_end_time ? convertUTCTimeToPakistani(breakRecord.break_end_time) : null
         })),
         isCheckedIn: isCheckedIn
       };
@@ -1690,8 +1691,8 @@ exports.getMonthlyAttendance = async (req, res) => {
           const d = record.attendance_date instanceof Date ? record.attendance_date : new Date(record.attendance_date);
           return getLocalDateString(d);
         })(),
-        check_in_time: record.check_in_time,
-        check_out_time: record.check_out_time || null
+        check_in_time: convertUTCTimeToPakistani(record.check_in_time),
+        check_out_time: record.check_out_time ? convertUTCTimeToPakistani(record.check_out_time) : null
       }));
 
       res.status(200).json({
@@ -1771,12 +1772,12 @@ exports.getAllAttendance = async (req, res) => {
           return {
             ...record,
             attendance_date: attendanceDateStr,
-            check_in_time: record.check_in_time,
-            check_out_time: record.check_out_time || null,
+            check_in_time: convertUTCTimeToPakistani(record.check_in_time),
+            check_out_time: record.check_out_time ? convertUTCTimeToPakistani(record.check_out_time) : null,
             breaks: breaks ? breaks.map(b => ({
               ...b,
-              break_start_time: b.break_start_time,
-              break_end_time: b.break_end_time || null
+              break_start_time: convertUTCTimeToPakistani(b.break_start_time),
+              break_end_time: b.break_end_time ? convertUTCTimeToPakistani(b.break_end_time) : null
             })) : [],
             total_breaks_count: breaks ? breaks.length : 0
           };
@@ -1861,12 +1862,12 @@ exports.getAllAttendanceWithAbsent = async (req, res) => {
           return {
             ...record,
             attendance_date: attendanceDateStr,
-            check_in_time: record.check_in_time,
-            check_out_time: record.check_out_time || null,
+            check_in_time: convertUTCTimeToPakistani(record.check_in_time),
+            check_out_time: record.check_out_time ? convertUTCTimeToPakistani(record.check_out_time) : null,
             breaks: breaks ? breaks.map(b => ({
               ...b,
-              break_start_time: b.break_start_time,
-              break_end_time: b.break_end_time || null
+              break_start_time: convertUTCTimeToPakistani(b.break_start_time),
+              break_end_time: b.break_end_time ? convertUTCTimeToPakistani(b.break_end_time) : null
             })) : [],
             total_breaks_count: breaks ? breaks.length : 0
           };
@@ -2079,11 +2080,11 @@ exports.getAllBreaks = async (req, res) => {
 
       console.log(`📊 Retrieved ${breaks.length} break records from database`);
 
-      // Times are already stored in Pakistan timezone format, no conversion needed
+      // Convert UTC times to Pakistan times for display
       const convertedBreaks = breaks.map(brk => ({
         ...brk,
-        break_start_time: brk.break_start_time,
-        break_end_time: brk.break_end_time || null
+        break_start_time: convertUTCTimeToPakistani(brk.break_start_time),
+        break_end_time: brk.break_end_time ? convertUTCTimeToPakistani(brk.break_end_time) : null
       }));
 
       res.status(200).json({
