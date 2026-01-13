@@ -8,3 +8,190 @@ Ignoring invalid configuration option passed to Connection: keepAliveInitialDela
 ╚════════════════════════════════════════╝
   
 ❌ Database connection failed: getaddrinfo ENOTFOUND srv1624.hostgr.io
+🔐 CORS Check - Origin: http://localhost:3000
+✅ Allowed Origins: [
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5000',
+  'https://plustaff-frontend.vercel.app',
+  'https://yourdomain.com'
+]
+🔐 CORS Check - Origin: http://localhost:3000
+✅ Allowed Origins: [
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5000',
+  'https://plustaff-frontend.vercel.app',
+  'https://yourdomain.com'
+]
+❌ Login error: Error: getaddrinfo ENOTFOUND srv1624.hostgr.io
+    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'srv1624.hostgr.io',
+  fatal: true
+}
+🔐 CORS Check - Origin: http://localhost:3000
+✅ Allowed Origins: [
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5000',
+  'https://plustaff-frontend.vercel.app',
+  'https://yourdomain.com'
+]
+❌ Login error: Error: getaddrinfo ENOTFOUND srv1624.hostgr.io
+    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'srv1624.hostgr.io',
+  fatal: true
+}
+🔐 CORS Check - Origin: undefined
+✅ Allowed Origins: [
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5000',
+  'https://plustaff-frontend.vercel.app',
+  'https://yourdomain.com'
+]
+🔐 CORS Check - Origin: http://localhost:3000
+✅ Allowed Origins: [
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5000',
+  'https://plustaff-frontend.vercel.app',
+  'https://yourdomain.com'
+]
+
+📊 SQL QUERY:
+SELECT eo.*, es.base_salary, es.total_salary 
+       FROM employee_onboarding eo
+       LEFT JOIN employee_salary es ON eo.id = es.employee_id
+       ORDER BY eo.created_at DESC
+---
+🔐 CORS Check - Origin: http://localhost:3000
+✅ Allowed Origins: [
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5000',
+  'https://plustaff-frontend.vercel.app',
+  'https://yourdomain.com'
+]
+
+📊 SQL QUERY:
+SELECT eo.*, es.base_salary, es.total_salary 
+       FROM employee_onboarding eo
+       LEFT JOIN employee_salary es ON eo.id = es.employee_id
+       ORDER BY eo.created_at DESC
+---
+Error fetching employees: Error: getaddrinfo ENOTFOUND srv1624.hostgr.io
+    at PromisePool.query (/home/hunain/Desktop/Office/Company CRM/Delpoyed_backend_CRM/Backend/node_modules/mysql2/lib/promise/pool.js:36:22)
+    at pool.query (/home/hunain/Desktop/Office/Company CRM/Delpoyed_backend_CRM/Backend/config/database.js:43:24)
+    at exports.getAllEmployees (/home/hunain/Desktop/Office/Company CRM/Delpoyed_backend_CRM/Backend/routes/controllers/onboardingController.js:165:36)
+    at Layer.handle [as handle_request] (/home/hunain/Desktop/Office/Company CRM/Delpoyed_backend_CRM/Backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/hunain/Desktop/Office/Company CRM/Delpoyed_backend_CRM/Backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/hunain/Desktop/Office/Company CRM/Delpoyed_backend_CRM/Backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/hunain/Desktop/Office/Company CRM/Delpoyed_backend_CRM/Backend/node_modules/express/lib/router/layer.js:95:5)
+    at /home/hunain/Desktop/Office/Company CRM/Delpoyed_backend_CRM/Backend/node_modules/express/lib/router/index.js:284:15
+    at router.process_params (/home/hunain/Desktop/Office/Company CRM/Delpoyed_backend_CRM/Backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/hunain/Desktop/Office/Company CRM/Delpoyed_backend_CRM/Backend/node_modules/express/lib/router/index.js:280:10) {
+  code: 'ENOTFOUND',
+  errno: -3008,
+  sql: undefined,
+  sqlState: undefined,
+  sqlMessage: undefined
+}
+Error fetching employees: Error: getaddrinfo ENOTFOUND srv1624.hostgr.io
+    at PromisePool.query (/home/hunain/Desktop/Office/Company CRM/Delpoyed_backend_CRM/Backend/node_modules/mysql2/lib/promise/pool.js:36:22)
+    at pool.query (/home/hunain/Desktop/Office/Company CRM/Delpoyed_backend_CRM/Backend/config/database.js:43:24)
+    at exports.getAllEmployees (/home/hunain/Desktop/Office/Company CRM/Delpoyed_backend_CRM/Backend/routes/controllers/onboardingController.js:165:36)
+    at Layer.handle [as handle_request] (/home/hunain/Desktop/Office/Company CRM/Delpoyed_backend_CRM/Backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/hunain/Desktop/Office/Company CRM/Delpoyed_backend_CRM/Backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/hunain/Desktop/Office/Company CRM/Delpoyed_backend_CRM/Backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/hunain/Desktop/Office/Company CRM/Delpoyed_backend_CRM/Backend/node_modules/express/lib/router/layer.js:95:5)
+    at /home/hunain/Desktop/Office/Company CRM/Delpoyed_backend_CRM/Backend/node_modules/express/lib/router/index.js:284:15
+    at router.process_params (/home/hunain/Desktop/Office/Company CRM/Delpoyed_backend_CRM/Backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/hunain/Desktop/Office/Company CRM/Delpoyed_backend_CRM/Backend/node_modules/express/lib/router/index.js:280:10) {
+  code: 'ENOTFOUND',
+  errno: -3008,
+  sql: undefined,
+  sqlState: undefined,
+  sqlMessage: undefined
+}
+🔐 CORS Check - Origin: undefined
+✅ Allowed Origins: [
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5000',
+  'https://plustaff-frontend.vercel.app',
+  'https://yourdomain.com'
+]
+🔐 CORS Check - Origin: undefined
+✅ Allowed Origins: [
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5000',
+  'https://plustaff-frontend.vercel.app',
+  'https://yourdomain.com'
+]
+🔐 CORS Check - Origin: undefined
+✅ Allowed Origins: [
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5000',
+  'https://plustaff-frontend.vercel.app',
+  'https://yourdomain.com'
+]
+
+📊 SQL QUERY:
+SELECT id, session_token, is_active FROM user_system_info WHERE session_token = ? LIMIT 1
+📊 PARAMETERS: [
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtcGxveWVlSWQiOjIxLCJlbWFpbCI6Im11aGFtbWFkLmh1bmFpbkBkaWdpb3VzLmNvbSIsIm5hbWUiOiJNdWhhbW1hZCBIdW5haW4iLCJyb2xlIjoiZW1wbG95ZWUiLCJpYXQiOjE3NjgzMDU1MTksImV4cCI6MTc2ODM5MTkxOX0.dUqOuCd30pJTSLS6OgBzv6Wede89HfsJ0rCP-DXXLos'
+]
+---
+Auth middleware DB check failed: getaddrinfo ENOTFOUND srv1624.hostgr.io
+🔐 CORS Check - Origin: http://localhost:5000
+✅ Allowed Origins: [
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5000',
+  'https://plustaff-frontend.vercel.app',
+  'https://yourdomain.com'
+]
+
+📊 SQL QUERY:
+SELECT id, session_token, is_active FROM user_system_info WHERE session_token = ? LIMIT 1
+📊 PARAMETERS: [
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsImVtcGxveWVlSWQiOjMsImVtYWlsIjoiZmF0aW1hLmtoYW5AZGlnaW91cy5jb20iLCJuYW1lIjoiRmF0aW1hIEtoYW4iLCJyb2xlIjoiSFIiLCJkZXNpZ25hdGlvbiI6IkhSIE1hbmFnZXIiLCJpYXQiOjE3NjgyNTI1ODYsImV4cCI6MTc2ODMzODk4Nn0.K6CdXhY9uEQmZR10Tq_KDBTDun6FvCnOoyouShBGlho'
+]
+---
+Auth middleware DB check failed: getaddrinfo ENOTFOUND srv1624.hostgr.io
+🔐 CORS Check - Origin: http://localhost:5000
+✅ Allowed Origins: [
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5000',
+  'https://plustaff-frontend.vercel.app',
+  'https://yourdomain.com'
+]
+
+📊 SQL QUERY:
+SELECT id, session_token, is_active FROM user_system_info WHERE session_token = ? LIMIT 1
+📊 PARAMETERS: [
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsImVtcGxveWVlSWQiOjMsImVtYWlsIjoiZmF0aW1hLmtoYW5AZGlnaW91cy5jb20iLCJuYW1lIjoiRmF0aW1hIEtoYW4iLCJyb2xlIjoiSFIiLCJkZXNpZ25hdGlvbiI6IkhSIE1hbmFnZXIiLCJpYXQiOjE3NjgyNDkxMDMsImV4cCI6MTc2ODMzNTUwM30.xdo4ReTQWFZb-TJoLNQvT3yuksHihozSqoGies_UEcs'
+]
+---
+Auth middleware DB check failed: getaddrinfo ENOTFOUND srv1624.hostgr.io
