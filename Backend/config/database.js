@@ -11,8 +11,10 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
   enableKeepAlive: true,
-  keepAliveInitialDelayMs: 0,
-  timezone: '+05:00' // Set Pakistan timezone (UTC+5)
+  keepAliveInitialDelayMs: 0
+  // REMOVED: timezone: '+05:00'
+  // Reason: Application handles timezone conversion with getPakistanDate() in utils/timezone.js
+  // Database stores times as-is without conversion to prevent double offset (+5 from app + 5 from DB = +10)
 });
 
 // Test the connection
