@@ -553,7 +553,7 @@ CREATE TABLE `Monthly_Attendance_Summary` (
 --
 
 CREATE TABLE `onboarding_progress` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `employee_id` int(11) NOT NULL,
   `step_1_basic_info` tinyint(1) DEFAULT 0,
   `step_1_completed_at` timestamp NULL DEFAULT NULL,

@@ -109,11 +109,6 @@ exports.createEmployee = async (req, res) => {
         [newEmployeeId, 1, 1, 1, 1, 1, 1, 1, 100]
       );
 
-      // NOTE: Employee is automatically synced to user_as_employees by the after_employee_insert trigger
-      // Do NOT manually insert here - let the trigger handle it
-
-      console.log(`✅ Employee added with ID ${newEmployeeId} - trigger will auto-sync to user_as_employees`);
-
       // Fetch created dynamic resources to return
       const [createdDynamicResources] = await connection.query(
         `SELECT id, resource_name as name, resource_serial as serial FROM employee_dynamic_resources WHERE employee_id = ?`,
