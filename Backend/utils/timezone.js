@@ -7,47 +7,57 @@
 
 /**
  * Get current date and time in Pakistan timezone
+ * Pakistan Standard Time (PKT) = UTC+5
+ * This works on any server regardless of its system timezone
  * @returns {Date} Date object representing current time in Pakistan
  */
 const getPakistanDate = () => {
-  // Server is already in Pakistan timezone, so just return current time
-  return new Date();
+  const now = new Date(); // Get UTC time
+  // Create a new date object with Pakistan time (UTC+5)
+  // Offset is in milliseconds: 5 hours = 5 * 60 * 60 * 1000 = 18000000 ms
+  const pktOffset = 5 * 60 * 60 * 1000; // 5 hours in milliseconds
+  const utcTime = now.getTime(); // Time in UTC
+  const pktTime = new Date(utcTime + pktOffset);
+  return pktTime;
 };
 
 /**
  * Get current date string in YYYY-MM-DD format (Pakistan timezone)
+ * Works on any server regardless of system timezone
  * @returns {string} Date string in YYYY-MM-DD format
  */
 const getPakistanDateString = () => {
   const date = getPakistanDate();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
 
 /**
  * Get current time string in HH:MM:SS format (Pakistan timezone)
+ * Works on any server regardless of system timezone
+ * Pakistan Standard Time (PKT) = UTC+5
  * @returns {string} Time string in HH:MM:SS format
  */
 const getPakistanTimeString = () => {
   const date = getPakistanDate();
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
+  const hours = String(date.getUTCHours()).padStart(2, '0');
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(date.getUTCSeconds()).padStart(2, '0');
   return `${hours}:${minutes}:${seconds}`;
 };
 
 /**
  * Get current time in UTC format for database storage
- * Since database timezone is set to +05:00, we need to subtract 5 hours from PKT to get UTC
- * @returns {string} Time string in HH:MM:SS format (UTC)
+ * Since database timezone is set to +05:00, we store times directly
+ * @returns {string} Time string in HH:MM:SS format (UTC+5 / PKT)
  */
 const getUTCTimeString = () => {
-  const now = new Date();
-  const hours = String(now.getUTCHours()).padStart(2, '0');
-  const minutes = String(now.getUTCMinutes()).padStart(2, '0');
-  const seconds = String(now.getUTCSeconds()).padStart(2, '0');
+  const date = getPakistanDate();
+  const hours = String(date.getUTCHours()).padStart(2, '0');
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(date.getUTCSeconds()).padStart(2, '0');
   return `${hours}:${minutes}:${seconds}`;
 };
 
@@ -82,14 +92,15 @@ const convertToPakistanTime = (date) => {
 
 /**
  * Format date to local date string in Pakistan timezone
+ * Works on any server regardless of system timezone
  * @param {Date|string} date - Date to format
  * @returns {string} Date string in YYYY-MM-DD format
  */
 const formatPakistanDate = (date) => {
   const pkDate = convertToPakistanTime(date);
-  const year = pkDate.getFullYear();
-  const month = String(pkDate.getMonth() + 1).padStart(2, '0');
-  const day = String(pkDate.getDate()).padStart(2, '0');
+  const year = pkDate.getUTCFullYear();
+  const month = String(pkDate.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(pkDate.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
 
