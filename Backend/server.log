@@ -1,0 +1,10 @@
+nohup: ignoring input
+Ignoring invalid configuration option passed to Connection: keepAliveInitialDelayMs. This is currently a warning, but in future versions of MySQL2, an error will be thrown if you pass an invalid configuration option to a Connection
+
+╔════════════════════════════════════════╗
+║   Digious CRM Backend Server Started   ║
+║   🚀 Running on: http://localhost:5000    ║
+║   📊 Environment: development       ║
+╚════════════════════════════════════════╝
+  
+❌ Database connection failed: getaddrinfo ENOTFOUND srv1624.hostgr.io

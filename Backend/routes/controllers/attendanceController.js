@@ -139,8 +139,7 @@ exports.checkIn = async (req, res) => {
     }
 
     const now = getPakistanDate(); // Use Pakistan timezone
-    const checkInTime = getPakistanTimeString(); // HH:MM:SS in Pakistan timezone (for display)
-    const checkInTimeUTC = getUTCTimeString(); // HH:MM:SS in UTC (for database storage)
+    const checkInTime = getPakistanTimeString(); // HH:MM:SS in Pakistan timezone
     const checkInHour = now.getHours(); // Pakistan hour
     
     // Determine attendance date for night shift:
@@ -308,7 +307,7 @@ exports.checkIn = async (req, res) => {
         `INSERT INTO Employee_Attendance 
          (employee_id, email, name, attendance_date, check_in_time, status, on_time, late_by_minutes, device_info, ip_address)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [employee_id, email, name, attendanceDate, checkInTimeUTC, status, onTime, lateByMinutes, device_info || null, ip_address || null]
+        [employee_id, email, name, attendanceDate, checkInTime, status, onTime, lateByMinutes, device_info || null, ip_address || null]
       );
 
       console.log(`✅ Check In: ${name} (${email}) at ${checkInTime} on ${attendanceDate}`);
