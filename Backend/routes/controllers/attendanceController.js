@@ -919,7 +919,40 @@ exports.recordBreakEnd = async (req, res) => {
       }
 
       const breakId = breakRecord[0].id;
-      const breakDurationMinutes = Math.floor(break_duration_minutes || 0);
+      
+      // Get the break start time from the database to calculate accurate duration
+      const [breakDetails] = await connection.query(
+        `SELECT break_start_time FROM Employee_Breaks WHERE id = ?`,
+        [breakId]
+      );
+
+      if (breakDetails.length === 0) {
+        if (connection) connection.release();
+        return res.status(404).json({
+          success: false,
+          message: 'Break record not found'
+        });
+      }
+
+      // Calculate duration accurately from start and end times
+      const breakStartTime = breakDetails[0].break_start_time;
+      const breakStartDate = new Date(`${attendanceDate}T${breakStartTime}`);
+      const breakEndDate = new Date(`${attendanceDate}T${breakEnd}`);
+      
+      // Handle case where break crosses midnight (early morning hours)
+      const breakStartHour = parseInt(breakStartTime.split(':')[0], 10);
+      const breakEndHour = parseInt(breakEnd.split(':')[0], 10);
+      
+      if (breakStartHour > 12 && breakEndHour < 12) {
+        // Break crossed midnight - add one day to end date
+        breakEndDate.setDate(breakEndDate.getDate() + 1);
+      }
+      
+      const breakDurationMinutes = Math.round((breakEndDate - breakStartDate) / (1000 * 60));
+      
+      console.log('   - Break Start Time:', breakStartTime);
+      console.log('   - Break End Time:', breakEnd);
+      console.log('   - Calculated Duration:', breakDurationMinutes, 'minutes');
 
       // Update break record with end time and duration
       await connection.query(
