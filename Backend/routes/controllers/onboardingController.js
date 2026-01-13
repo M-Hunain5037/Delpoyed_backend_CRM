@@ -275,8 +275,8 @@ exports.updateEmployee = async (req, res) => {
     try {
       await connection.beginTransaction();
 
-      // Build update query
-      const allowedFields = ['name', 'email', 'phone', 'cnic', 'department', 'position', 'address', 'emergency_contact', 'bank_account', 'tax_id', 'status'];
+      // Build update query for employee_onboarding
+      const allowedFields = ['name', 'email', 'phone', 'cnic', 'department', 'position', 'address', 'emergency_contact', 'bank_account', 'tax_id', 'status', 'designation'];
       const updateFields = [];
       const updateValues = [];
 
@@ -293,6 +293,95 @@ exports.updateEmployee = async (req, res) => {
           `UPDATE employee_onboarding SET ${updateFields.join(', ')} WHERE id = ?`,
           updateValues
         );
+      }
+
+      // Update resources if provided
+      if (updates.laptop !== undefined || updates.charger !== undefined || updates.mouse !== undefined || 
+          updates.keyboard !== undefined || updates.monitor !== undefined || updates.mobile !== undefined ||
+          updates.resources_note !== undefined) {
+        
+        const resourceFields = [];
+        const resourceValues = [];
+
+        if (updates.laptop !== undefined) {
+          resourceFields.push('laptop = ?');
+          resourceValues.push(updates.laptop ? 1 : 0);
+        }
+        if (updates.laptop_serial !== undefined) {
+          resourceFields.push('laptop_serial = ?');
+          resourceValues.push(updates.laptop_serial || null);
+        }
+        if (updates.charger !== undefined) {
+          resourceFields.push('charger = ?');
+          resourceValues.push(updates.charger ? 1 : 0);
+        }
+        if (updates.charger_serial !== undefined) {
+          resourceFields.push('charger_serial = ?');
+          resourceValues.push(updates.charger_serial || null);
+        }
+        if (updates.mouse !== undefined) {
+          resourceFields.push('mouse = ?');
+          resourceValues.push(updates.mouse ? 1 : 0);
+        }
+        if (updates.mouse_serial !== undefined) {
+          resourceFields.push('mouse_serial = ?');
+          resourceValues.push(updates.mouse_serial || null);
+        }
+        if (updates.keyboard !== undefined) {
+          resourceFields.push('keyboard = ?');
+          resourceValues.push(updates.keyboard ? 1 : 0);
+        }
+        if (updates.keyboard_serial !== undefined) {
+          resourceFields.push('keyboard_serial = ?');
+          resourceValues.push(updates.keyboard_serial || null);
+        }
+        if (updates.monitor !== undefined) {
+          resourceFields.push('monitor = ?');
+          resourceValues.push(updates.monitor ? 1 : 0);
+        }
+        if (updates.monitor_serial !== undefined) {
+          resourceFields.push('monitor_serial = ?');
+          resourceValues.push(updates.monitor_serial || null);
+        }
+        if (updates.mobile !== undefined) {
+          resourceFields.push('mobile = ?');
+          resourceValues.push(updates.mobile ? 1 : 0);
+        }
+        if (updates.mobile_serial !== undefined) {
+          resourceFields.push('mobile_serial = ?');
+          resourceValues.push(updates.mobile_serial || null);
+        }
+        if (updates.resources_note !== undefined) {
+          resourceFields.push('resources_note = ?');
+          resourceValues.push(updates.resources_note || null);
+        }
+
+        if (resourceFields.length > 0) {
+          resourceValues.push(id);
+          await connection.query(
+            `UPDATE employee_resources SET ${resourceFields.join(', ')} WHERE employee_id = ?`,
+            resourceValues
+          );
+        }
+      }
+
+      // Update allowances if provided
+      if (updates.allowances && Array.isArray(updates.allowances)) {
+        // First, delete existing allowances
+        await connection.query(
+          `DELETE FROM employee_allowances WHERE employee_id = ?`,
+          [id]
+        );
+
+        // Then insert new allowances
+        for (const allowance of updates.allowances) {
+          if (allowance.name && allowance.amount) {
+            await connection.query(
+              `INSERT INTO employee_allowances (employee_id, allowance_name, allowance_amount) VALUES (?, ?, ?)`,
+              [id, allowance.name, allowance.amount]
+            );
+          }
+        }
       }
 
       await connection.commit();

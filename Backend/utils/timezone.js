@@ -10,11 +10,8 @@
  * @returns {Date} Date object representing current time in Pakistan
  */
 const getPakistanDate = () => {
-  // Pakistan is UTC+5
-  const now = new Date();
-  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const pakistanTime = new Date(utc + (3600000 * 5)); // UTC+5
-  return pakistanTime;
+  // Server is already in Pakistan timezone, so just return current time
+  return new Date();
 };
 
 /**
@@ -79,10 +76,8 @@ const getPakistanMySQLDateTime = () => {
  * @returns {Date} Date in Pakistan timezone
  */
 const convertToPakistanTime = (date) => {
-  const inputDate = new Date(date);
-  const utc = inputDate.getTime() + (inputDate.getTimezoneOffset() * 60000);
-  const pakistanTime = new Date(utc + (3600000 * 5)); // UTC+5
-  return pakistanTime;
+  // Server is already in Pakistan timezone, so just return the date as is
+  return new Date(date);
 };
 
 /**
