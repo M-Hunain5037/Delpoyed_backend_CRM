@@ -12,37 +12,172 @@ exports.createEmployee = async (req, res) => {
       phone,
       cnic,
       department,
-      position,
+      sub_department,
+      join_date,
       joinDate,
       baseSalary,
       allowances,
       address,
       emergencyContact,
+      emergency_contact,
       bankAccount,
+      bank_account,
       taxId,
+      tax_id,
       designation,
+      employment_status,
+      employmentStatus,
+      confirmation_date,
+      confirmationDate,
+      account_title_name,
+      accountTitleName,
+      bank_name,
+      bankName,
+      cnic_issue_date,
+      cnicIssueDate,
+      cnic_expiry_date,
+      cnicExpiryDate,
+      requestPasswordChange,
+      request_password_change,
       // Resources
       laptop,
       laptopSerial,
+      laptop_serial,
       charger,
       chargerSerial,
+      charger_serial,
       mouse,
       mouseSerial,
+      mouse_serial,
       mobile,
       mobileSerial,
+      mobile_serial,
       keyboard,
       keyboardSerial,
+      keyboard_serial,
       monitor,
       monitorSerial,
+      monitor_serial,
       dynamicResources,
-      resourcesNote
+      dynamic_resources,
+      resourcesNote,
+      resources_note
     } = req.body;
 
+    // Normalize field names (handle both camelCase and snake_case)
+    const normalizedData = {
+      employeeId,
+      name,
+      email,
+      password,
+      phone,
+      cnic,
+      department,
+      sub_department,
+      joinDate: join_date || joinDate,
+      baseSalary,
+      allowances,
+      address,
+      emergencyContact: emergency_contact || emergencyContact,
+      bankAccount: bank_account || bankAccount,
+      taxId: tax_id || taxId,
+      designation,
+      employmentStatus: employment_status || employmentStatus,
+      confirmationDate: confirmation_date || confirmationDate,
+      accountTitleName: account_title_name || accountTitleName,
+      bankName: bank_name || bankName,
+      cnicIssueDate: cnic_issue_date || cnicIssueDate,
+      cnicExpiryDate: cnic_expiry_date || cnicExpiryDate,
+      requestPasswordChange: request_password_change !== undefined ? request_password_change : requestPasswordChange,
+      laptop,
+      laptopSerial: laptop_serial || laptopSerial,
+      charger,
+      chargerSerial: charger_serial || chargerSerial,
+      mouse,
+      mouseSerial: mouse_serial || mouseSerial,
+      mobile,
+      mobileSerial: mobile_serial || mobileSerial,
+      keyboard,
+      keyboardSerial: keyboard_serial || keyboardSerial,
+      monitor,
+      monitorSerial: monitor_serial || monitorSerial,
+      dynamicResources: dynamic_resources || dynamicResources,
+      resourcesNote: resources_note || resourcesNote
+    };
+
+    const {
+      joinDate: finalJoinDate,
+      employmentStatus: finalEmploymentStatus,
+      confirmationDate: finalConfirmationDate,
+      accountTitleName: finalAccountTitleName,
+      bankName: finalBankName,
+      cnicIssueDate: finalCnicIssueDate,
+      cnicExpiryDate: finalCnicExpiryDate,
+      emergencyContact: finalEmergencyContact,
+      bankAccount: finalBankAccount,
+      taxId: finalTaxId
+    } = normalizedData;
+
+    // Normalize CNIC month-year (YYYY-MM) to full date YYYY-MM-01 for storage
+    const normalizeMonthYearToDate = (val) => {
+      if (!val) return null;
+      // Accept YYYY-MM or YYYY-MM-DD
+      if (/^\d{4}-\d{2}$/.test(val)) {
+        const [y, m] = val.split('-');
+        const mm = Number(m);
+        if (mm >= 1 && mm <= 12) return `${y}-${m}-01`;
+        return null;
+      }
+      if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+      return null;
+    };
+
+    const normalizedCnicIssueDate = normalizeMonthYearToDate(finalCnicIssueDate);
+    const normalizedCnicExpiryDate = normalizeMonthYearToDate(finalCnicExpiryDate);
+
+    if (finalCnicIssueDate && !normalizedCnicIssueDate) {
+      return res.status(400).json({ success: false, message: 'CNIC issue date format invalid. Use month and year (YYYY-MM) or full date YYYY-MM-DD' });
+    }
+    if (finalCnicExpiryDate && !normalizedCnicExpiryDate) {
+      return res.status(400).json({ success: false, message: 'CNIC expiry date format invalid. Use month and year (YYYY-MM) or full date YYYY-MM-DD' });
+    }
+
+    // Ensure expiry is same or after issue month
+    if (normalizedCnicIssueDate && normalizedCnicExpiryDate) {
+      if (new Date(normalizedCnicExpiryDate) < new Date(normalizedCnicIssueDate)) {
+        return res.status(400).json({ success: false, message: 'CNIC expiry must be same or after issue month' });
+      }
+    }
+
     // Validation
-    if (!employeeId || !name || !email || !password || !phone || !department || !position || !joinDate || !baseSalary) {
+    // Email must be @digioussolutions.com
+    if (!normalizedData.email || !normalizedData.email.endsWith('@digioussolutions.com')) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields'
+        message: 'Email must be @digioussolutions.com domain',
+        received: { email: normalizedData.email }
+      });
+    }
+
+    if (!normalizedData.employeeId || !normalizedData.name || !normalizedData.email || !normalizedData.password || !normalizedData.phone || !normalizedData.department || !normalizedData.sub_department || !normalizedData.joinDate || !normalizedData.baseSalary || !finalEmploymentStatus || !finalConfirmationDate || !finalAccountTitleName || !finalBankName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields. Required: employeeId, name, email, password, phone, department, sub_department, joinDate, baseSalary, employment_status, confirmation_date, account_title_name, bank_name',
+        received: {
+          employeeId: normalizedData.employeeId,
+          name: normalizedData.name,
+          email: normalizedData.email,
+          password: normalizedData.password ? '***' : 'missing',
+          phone: normalizedData.phone,
+          department: normalizedData.department,
+          sub_department: normalizedData.sub_department,
+          joinDate: normalizedData.joinDate,
+          baseSalary: normalizedData.baseSalary,
+          employmentStatus: finalEmploymentStatus,
+          confirmationDate: finalConfirmationDate,
+          accountTitleName: finalAccountTitleName,
+          bankName: finalBankName
+        }
       });
     }
 
@@ -52,31 +187,64 @@ exports.createEmployee = async (req, res) => {
       await connection.beginTransaction();
 
       // Hash password
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash(normalizedData.password, 10);
 
       // Insert employee onboarding record
       const [employeeResult] = await connection.query(
         `INSERT INTO employee_onboarding 
-        (employee_id, name, email, password_temp, phone, cnic, department, position, join_date, address, emergency_contact, bank_account, tax_id, designation, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [employeeId, name, email, hashedPassword, phone, cnic || null, department, position, joinDate, address || null, emergencyContact || null, bankAccount || null, taxId || null, designation || null, 'Active']
+        (employee_id, name, email, password_temp, phone, cnic, department, sub_department, join_date, confirmation_date, address, emergency_contact, request_password_change, account_title_name, bank_name, bank_account, tax_id, designation, employment_status, cnic_issue_date, cnic_expiry_date, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          normalizedData.employeeId, 
+          normalizedData.name, 
+          normalizedData.email, 
+          hashedPassword, 
+          normalizedData.phone, 
+          normalizedData.cnic || null, 
+          normalizedData.department, 
+          normalizedData.sub_department, 
+          normalizedData.joinDate, 
+          finalConfirmationDate, 
+          normalizedData.address || null, 
+          finalEmergencyContact || null, 
+          normalizedData.requestPasswordChange ? 1 : 0, 
+          finalAccountTitleName, 
+          finalBankName, 
+          finalBankAccount || null, 
+          finalTaxId || null, 
+          normalizedData.designation || null, 
+          finalEmploymentStatus, 
+          normalizedCnicIssueDate || null, 
+          normalizedCnicExpiryDate || null, 
+          'Active'
+        ]
       );
 
       const newEmployeeId = employeeResult.insertId;
 
+      // Insert bank account details
+      if (finalAccountTitleName && finalBankName) {
+        // Generate account number if not provided (use employee_id + timestamp)
+        const generatedAccountNumber = `${normalizedData.employeeId}-${Date.now()}`.substring(0, 50);
+        await connection.query(
+          `INSERT INTO employee_bank_accounts (employee_id, account_number, account_title_name, bank_name, is_primary) VALUES (?, ?, ?, ?, 1)`,
+          [newEmployeeId, generatedAccountNumber, finalAccountTitleName, finalBankName]
+        );
+      }
+
       // Insert salary record
-      const totalSalary = baseSalary + (allowances?.reduce((sum, a) => sum + a.amount, 0) || 0);
+      const totalSalary = normalizedData.baseSalary + (normalizedData.allowances?.reduce((sum, a) => sum + a.amount, 0) || 0);
       await connection.query(
         `INSERT INTO employee_salary (employee_id, base_salary, total_salary) VALUES (?, ?, ?)`,
-        [newEmployeeId, baseSalary, totalSalary]
+        [newEmployeeId, normalizedData.baseSalary, totalSalary]
       );
 
       // Insert allowances
-      if (allowances && allowances.length > 0) {
-        for (const allowance of allowances) {
+      if (normalizedData.allowances && normalizedData.allowances.length > 0) {
+        for (const allowance of normalizedData.allowances) {
           await connection.query(
-            `INSERT INTO employee_allowances (employee_id, allowance_name, allowance_amount) VALUES (?, ?, ?)`,
-            [newEmployeeId, allowance.name, allowance.amount]
+            `INSERT INTO employee_allowances (employee_id, allowance_name, allowance_amount, currency) VALUES (?, ?, ?, ?)`,
+            [newEmployeeId, allowance.name, allowance.amount, 'PKR']
           );
         }
       }
@@ -86,13 +254,13 @@ exports.createEmployee = async (req, res) => {
         `INSERT INTO employee_resources 
         (employee_id, laptop, laptop_serial, charger, charger_serial, mouse, mouse_serial, mobile, mobile_serial, keyboard, keyboard_serial, monitor, monitor_serial, resources_note)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [newEmployeeId, laptop || false, laptopSerial || null, charger || false, chargerSerial || null, mouse || false, mouseSerial || null, mobile || false, mobileSerial || null, keyboard || false, keyboardSerial || null, monitor || false, monitorSerial || null, resourcesNote || null]
+        [newEmployeeId, normalizedData.laptop || false, normalizedData.laptopSerial || null, normalizedData.charger || false, normalizedData.chargerSerial || null, normalizedData.mouse || false, normalizedData.mouseSerial || null, normalizedData.mobile || false, normalizedData.mobileSerial || null, normalizedData.keyboard || false, normalizedData.keyboardSerial || null, normalizedData.monitor || false, normalizedData.monitorSerial || null, normalizedData.resourcesNote || null]
       );
 
       // Insert dynamic resources
-      if (dynamicResources && dynamicResources.length > 0) {
-        console.log('📦 Inserting dynamic resources:', dynamicResources);
-        for (const resource of dynamicResources) {
+      if (normalizedData.dynamicResources && normalizedData.dynamicResources.length > 0) {
+        console.log('📦 Inserting dynamic resources:', normalizedData.dynamicResources);
+        for (const resource of normalizedData.dynamicResources) {
           const insertResult = await connection.query(
             `INSERT INTO employee_dynamic_resources (employee_id, resource_name, resource_serial) VALUES (?, ?, ?)`,
             [newEmployeeId, resource.name, resource.serial || null]
@@ -122,11 +290,15 @@ exports.createEmployee = async (req, res) => {
         message: 'Employee onboarded successfully',
         data: {
           id: newEmployeeId,
-          employeeId,
-          name,
-          email,
-          department,
-          position,
+          employeeId: normalizedData.employeeId,
+          name: normalizedData.name,
+          email: normalizedData.email,
+          department: normalizedData.department,
+          sub_department: normalizedData.sub_department,
+          employment_status: finalEmploymentStatus,
+          confirmation_date: finalConfirmationDate,
+          account_title_name: finalAccountTitleName,
+          bank_name: finalBankName,
           status: 'Active',
           dynamicResourcesCreated: createdDynamicResources
         }
@@ -271,7 +443,7 @@ exports.updateEmployee = async (req, res) => {
       await connection.beginTransaction();
 
       // Build update query for employee_onboarding
-      const allowedFields = ['name', 'email', 'phone', 'cnic', 'department', 'position', 'address', 'emergency_contact', 'bank_account', 'tax_id', 'status', 'designation'];
+      const allowedFields = ['name', 'email', 'phone', 'cnic', 'department', 'sub_department', 'address', 'emergency_contact', 'account_title_name', 'bank_name', 'bank_account', 'tax_id', 'status', 'designation', 'employment_status', 'confirmation_date', 'cnic_issue_date', 'cnic_expiry_date'];
       const updateFields = [];
       const updateValues = [];
 
@@ -476,7 +648,7 @@ exports.getOnboardingProgress = async (req, res) => {
 exports.checkEmployeeIdAvailability = async (req, res) => {
   try {
     const { numericId } = req.params;
-    const EMPLOYEE_ID_PREFIX = 'DIG';
+    const EMPLOYEE_ID_PREFIX = 'DG';
 
     // Validate numeric ID
     // Must be at least 3 digits and not "000"
@@ -506,11 +678,10 @@ exports.checkEmployeeIdAvailability = async (req, res) => {
       });
     }
 
-    // Format ID with proper padding
-    const paddedId = String(parseInt(numericId)).padStart(3, '0');
-    const fullEmployeeId = `${EMPLOYEE_ID_PREFIX}-${paddedId}`;
+    // Keep the ID as-is without padding for exact match checking
+    const fullEmployeeId = `${EMPLOYEE_ID_PREFIX}-${numericId}`;
 
-    // Check if ID exists in database (case-insensitive)
+    // Check if EXACT ID exists in database (case-insensitive) - use the exact user input
     const [result] = await pool.query(
       `SELECT employee_id FROM employee_onboarding WHERE UPPER(employee_id) = UPPER(?)`,
       [fullEmployeeId]
@@ -529,14 +700,15 @@ exports.checkEmployeeIdAvailability = async (req, res) => {
     }
 
     // ID exists, suggest next available ID
-    // Get all employee IDs with DIG prefix
+    // Get all employee IDs with the configured prefix (case-insensitive)
     const [allIds] = await pool.query(
       `SELECT employee_id FROM employee_onboarding 
-       WHERE employee_id LIKE 'DIG-%' OR employee_id LIKE 'DiG-%'
-       ORDER BY CAST(SUBSTRING_INDEX(employee_id, '-', -1) AS UNSIGNED) ASC`
+       WHERE UPPER(employee_id) LIKE UPPER(?)
+       ORDER BY CAST(SUBSTRING_INDEX(employee_id, '-', -1) AS UNSIGNED) ASC`,
+      [`${EMPLOYEE_ID_PREFIX}-%`]
     );
 
-    // Extract numeric parts and find gaps
+    // Extract numeric parts and find next available
     const usedNumbers = allIds.map(row => {
       const numPart = row.employee_id.split('-')[1];
       return parseInt(numPart);
@@ -552,7 +724,7 @@ exports.checkEmployeeIdAvailability = async (req, res) => {
       }
     }
 
-    const suggestedId = `${EMPLOYEE_ID_PREFIX}-${String(nextNumber).padStart(3, '0')}`;
+    const suggestedId = `${EMPLOYEE_ID_PREFIX}-${nextNumber}`;
 
     return res.status(200).json({
       success: false,

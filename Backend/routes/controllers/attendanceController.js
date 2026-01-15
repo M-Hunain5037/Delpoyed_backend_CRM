@@ -185,10 +185,13 @@ exports.checkIn = async (req, res) => {
             const pkNow = getPakistanDate();
             const hoursSinceCheckIn = (pkNow.getTime() - createdAt.getTime()) / (1000 * 60 * 60); // Convert ms to hours
             
-            // Only auto-checkout if 24+ hours have passed
-            if (hoursSinceCheckIn >= 24) {
-              console.log(`🔧 STALE RECORD DETECTED (24+ hours old): Auto-completing checkout for record ID ${existingAttendance[0].id}`);
-              console.log(`   Created ${hoursSinceCheckIn.toFixed(1)} hours ago - Auto-completing...`);
+            // Auto-checkout if record is stale (24+ hours) OR if it's a new shift attempt (employee trying to check in again)
+            // This allows employees to auto-complete their previous shift and start a new one
+            const isNewShiftAttempt = checkInTotalMinutes >= 21 * 60; // Trying to check in during shift hours (21:00+)
+            
+            if (hoursSinceCheckIn >= 24 || isNewShiftAttempt) {
+              console.log(`🔧 AUTO-COMPLETING PREVIOUS CHECKOUT: Record ID ${existingAttendance[0].id}`);
+              console.log(`   Reason: ${isNewShiftAttempt ? 'New shift check-in attempt' : `Stale record (${hoursSinceCheckIn.toFixed(1)} hours old)`}`);
               
               // Auto-complete the previous checkout with current time minus 1 minute
               const pkDate = getPakistanDate();
@@ -218,11 +221,12 @@ exports.checkIn = async (req, res) => {
                 [autoCheckOutTime, workingHours.gross, workingHours.net, workingHours.overtime, workingHours.overtimeHours, existingAttendance[0].id]
               );
               
-              console.log(`✅ STALE RECORD AUTO-COMPLETED: ID ${existingAttendance[0].id}, checkout time: ${autoCheckOutTime}`);
-              // After auto-completing stale record, proceed to create new check-in
+              console.log(`✅ PREVIOUS CHECKOUT AUTO-COMPLETED: ID ${existingAttendance[0].id}, checkout time: ${autoCheckOutTime}`);
+              console.log(`   Working hours calculated: ${workingHours.gross} minutes (${(workingHours.gross/60).toFixed(2)} hours)`);
+              // After auto-completing previous record, proceed to create new check-in
             } else {
-              // Record is less than 24 hours old - DO NOT auto-checkout
-              console.log(`⚠️ RECORD STILL OPEN (only ${hoursSinceCheckIn.toFixed(1)} hours old): Preventing duplicate check-in`);
+              // Record is less than 24 hours old and not a shift time attempt - prevent duplicate check-in
+              console.log(`⚠️ DUPLICATE CHECK-IN ATTEMPT BLOCKED (record only ${hoursSinceCheckIn.toFixed(1)} hours old)`);
               console.log(`   Record ID: ${existingAttendance[0].id}`);
               console.log(`   Check-in Time: ${existingAttendance[0].check_in_time}`);
               console.log(`   Status: ALREADY CHECKED IN - Please checkout first before checking in again`);
@@ -919,40 +923,7 @@ exports.recordBreakEnd = async (req, res) => {
       }
 
       const breakId = breakRecord[0].id;
-      
-      // Get the break start time from the database to calculate accurate duration
-      const [breakDetails] = await connection.query(
-        `SELECT break_start_time FROM Employee_Breaks WHERE id = ?`,
-        [breakId]
-      );
-
-      if (breakDetails.length === 0) {
-        if (connection) connection.release();
-        return res.status(404).json({
-          success: false,
-          message: 'Break record not found'
-        });
-      }
-
-      // Calculate duration accurately from start and end times
-      const breakStartTime = breakDetails[0].break_start_time;
-      const breakStartDate = new Date(`${attendanceDate}T${breakStartTime}`);
-      const breakEndDate = new Date(`${attendanceDate}T${breakEnd}`);
-      
-      // Handle case where break crosses midnight (early morning hours)
-      const breakStartHour = parseInt(breakStartTime.split(':')[0], 10);
-      const breakEndHour = parseInt(breakEnd.split(':')[0], 10);
-      
-      if (breakStartHour > 12 && breakEndHour < 12) {
-        // Break crossed midnight - add one day to end date
-        breakEndDate.setDate(breakEndDate.getDate() + 1);
-      }
-      
-      const breakDurationMinutes = Math.round((breakEndDate - breakStartDate) / (1000 * 60));
-      
-      console.log('   - Break Start Time:', breakStartTime);
-      console.log('   - Break End Time:', breakEnd);
-      console.log('   - Calculated Duration:', breakDurationMinutes, 'minutes');
+      const breakDurationMinutes = Math.floor(break_duration_minutes || 0);
 
       // Update break record with end time and duration
       await connection.query(
@@ -1558,8 +1529,8 @@ exports.recordBreak = async (req, res) => {
 exports.getTodayAttendance = async (req, res) => {
   try {
     const { employee_id } = req.params;
-    const now = new Date();
-    const currentHour = now.getHours();
+    const now = getPakistanDate(); // USE PAKISTAN TIMEZONE, NOT SERVER TIMEZONE!
+    const currentHour = now.getUTCHours(); // Use UTC hours (which are PKT hours after offset)
     
     // For night shift: if current time is 00:00-05:59, check YESTERDAY's attendance
     // Because night shift runs from 21:00 Day1 to 06:00 Day2
@@ -1567,12 +1538,12 @@ exports.getTodayAttendance = async (req, res) => {
     if (currentHour >= 0 && currentHour < 6) {
       // Early morning - look for yesterday's shift
       const yesterday = new Date(now);
-      yesterday.setDate(yesterday.getDate() - 1);
+      yesterday.setUTCDate(yesterday.getUTCDate() - 1); // Use UTC date methods
       searchDate = getLocalDateString(yesterday);
       console.log(`📅 getTodayAttendance [EARLY MORNING] - Searching YESTERDAY's date: ${searchDate}`);
     } else {
       // Normal hours - look for today's shift
-      searchDate = getLocalDateString(now);
+      searchDate = getPakistanDateString(); // Use Pakistan date function
       console.log(`📅 getTodayAttendance [NORMAL HOURS] - Searching TODAY's date: ${searchDate}`);
     }
 
@@ -1682,8 +1653,9 @@ exports.getMonthlyAttendance = async (req, res) => {
     const { employee_id } = req.params;
     const { year, month } = req.query;
 
-    const currentYear = year || new Date().getFullYear();
-    const currentMonth = month || new Date().getMonth() + 1;
+    const pkDate = getPakistanDate(); // USE PAKISTAN TIMEZONE
+    const currentYear = year || pkDate.getUTCFullYear();
+    const currentMonth = month || pkDate.getUTCMonth() + 1;
 
     const connection = await pool.getConnection();
 
